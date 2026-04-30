@@ -1,0 +1,104 @@
+{
+  "theme": "light",
+  "archetype": "Organic & Earthy",
+  "typography": {
+    "heading_font": "Outfit",
+    "body_font": "Manrope",
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-none",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight",
+      "h3": "text-xl sm:text-2xl",
+      "h4": "text-lg sm:text-xl",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm",
+      "overline": "text-xs uppercase tracking-[0.2em]"
+    }
+  },
+  "colors": {
+    "background": "40 20% 98%",
+    "foreground": "210 10% 15%",
+    "primary": "140 30% 25%",
+    "primary_foreground": "0 0% 100%",
+    "secondary": "120 15% 90%",
+    "secondary_foreground": "140 30% 25%",
+    "accent": "40 30% 92%",
+    "accent_foreground": "210 10% 15%",
+    "destructive": "15 70% 50%",
+    "destructive_foreground": "0 0% 100%",
+    "muted": "120 10% 92%",
+    "muted_foreground": "140 10% 40%",
+    "border": "120 10% 88%",
+    "input": "120 10% 88%",
+    "ring": "140 30% 25%",
+    "card": "0 0% 100%",
+    "card_foreground": "210 10% 15%",
+    "popover": "0 0% 100%",
+    "popover_foreground": "210 10% 15%",
+    "chart_1": "140 30% 35%",
+    "chart_2": "15 70% 50%",
+    "chart_3": "40 70% 45%",
+    "chart_4": "210 30% 40%",
+    "chart_5": "25 40% 45%"
+  },
+  "layout_patterns": {
+    "landing_page": {
+      "spacing": "Generous (p-12, py-24, gap-12)",
+      "grid": "Tetris grid (grid-cols-1 md:grid-cols-12) for features. Asymmetrical layouts.",
+      "hero": "Full height or max-h-[80vh] with bg-black/40 gradient overlay to ensure text contrast. Big Outfit headings.",
+      "visuals": "Organic shapes, wide landscape photography, generous negative space."
+    },
+    "dashboard": {
+      "spacing": "Dense (p-4, p-6, gap-4 or gap-6)",
+      "grid": "Control Room grid. Sidebar + Main content area. Main area uses grid-cols-1 lg:grid-cols-4.",
+      "map_section": "Dominant element. col-span-1 lg:col-span-3 row-span-2. h-[600px] or flex-1. Needs solid borders.",
+      "cards": "Flat solid surfaces. 1px solid border (border-border). No default shadow. Hover gets -translate-y-1 and shadow-md.",
+      "kpi_tiles": "col-span-1. Clean, large data values (text-3xl font-light). Subtle icon in top right."
+    }
+  },
+  "components": {
+    "buttons": "Flat, rounded-md, distinct hover state (hover:bg-primary/90).",
+    "alerts": "Use destructive (terracotta) for high severity (fires, deforestation), chart_3 (ochre) for medium severity (illegal agriculture).",
+    "forms": "Shadcn components heavily customized. Input fields have 1px solid border, pale sage focus ring (ring-primary/50).",
+    "navigation": "Dashboard: Sidebar layout with icons. Landing: Sticky Crystal Glass header (backdrop-blur-xl bg-background/70)."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "url": "https://images.unsplash.com/photo-1678188416081-a0135754c241?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwxfHx0cm9waWNhbCUyMGZvcmVzdCUyMGFlcmlhbCUyMHZpZXd8ZW58MHx8fHwxNzc3NTkxNzUwfDA&ixlib=rb-4.1.0&q=85",
+        "category": "landing_hero",
+        "description": "Lush green tropical forest aerial view for landing page hero background"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1730470824798-9a50f3a7c752?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwzfHxkcm9uZSUyMGZseWluZyUyMG92ZXIlMjBmb3Jlc3R8ZW58MHx8fHwxNzc3NTkxNzUwfDA&ixlib=rb-4.1.0&q=85",
+        "category": "drone_module",
+        "description": "Drone flying over a green forest for the drone missions landing or dashboard card"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1764639564617-097064dc7097?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwxfHxmb3Jlc3QlMjByYW5nZXIlMjB0cmFja2luZ3xlbnwwfHx8fDE3Nzc1OTE3NTB8MA&ixlib=rb-4.1.0&q=85",
+        "category": "field_observations",
+        "description": "Forest rangers/firefighters near a utility vehicle for field observations module"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1770764171386-5bf604244678?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwyfHx0cm9waWNhbCUyMGZvcmVzdCUyMGFlcmlhbCUyMHZpZXd8ZW58MHx8fHwxNzc3NTkxNzUwfDA&ixlib=rb-4.1.0&q=85",
+        "category": "landing_features",
+        "description": "Winding river through mangrove/forest for GEE/Satellite tracking feature section"
+      }
+    ]
+  },
+  "icons": "lucide-react",
+  "accessibility_and_interactions": {
+    "hover_states": "All interactive elements must change background or foreground on hover. Ensure contrast.",
+    "focus_rings": "Standardize focus-visible with ring-2 ring-primary ring-offset-2 ring-offset-background.",
+    "data_testid": "ALL buttons, links, form inputs, map layers, and alert cards MUST include role-based data-testid (e.g., 'login-submit-button', 'alert-resolve-btn')."
+  },
+  "instructions_to_main_agent": [
+    "Build a full-stack hybrid app: A Landing page (marketing style, generous padding, large text) and a Dashboard (dense, functional, sidebar navigation).",
+    "Use Shadcn UI. Apply the provided HSL color variables exactly to globals.css.",
+    "Import Outfit and Manrope from Google Fonts.",
+    "Dashboard should heavily feature react-leaflet for the map. The map should be prominent (col-span-3 in a 4-col grid).",
+    "Mock the GEE data (NDVI, NBR) as raster overlays on the map or as separate data cards.",
+    "Implement the Alert workflow (Detected -> Verification -> Confirmed -> Resolved). Use Terracotta (#d35400) for high alerts.",
+    "Ensure all dashboard cards are cardless/flat (no shadow, 1px border) with hover lifts.",
+    "Implement Role-Based Access Control UI structures (Admin, Analyst, Agent, Pilot)."
+  ]
+}
