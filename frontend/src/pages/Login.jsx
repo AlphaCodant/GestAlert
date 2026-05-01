@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,9 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (user) {
-    navigate("/dashboard");
-  }
+  useEffect(() => {
+    if (user) navigate("/dashboard", { replace: true });
+  }, [user, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();

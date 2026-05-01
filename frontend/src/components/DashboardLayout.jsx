@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_LABEL } from "@/lib/constants";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import {
   LayoutDashboard, MapPin, Bell, Eye, Plane, Sparkles, Trees, Brain, Users, LogOut, Trees as Logo
 } from "lucide-react";
@@ -90,7 +91,9 @@ export default function DashboardLayout() {
       </aside>
 
       <main className="flex-1 min-w-0">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       <Toaster richColors position="top-right" />
