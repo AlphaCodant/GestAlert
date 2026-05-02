@@ -332,3 +332,143 @@ class TestAI:
         assert rh.status_code == 200
         history = rh.json()
         assert isinstance(history, list) and len(history) >= 1
+
+
+
+# ------------- Kobo Toolbox webhook -------------
+KOBO_SECRET = os.environ.get("KOBO_WEBHOOK_SECRET", "gestpro_kobo_2026_secret_token")
+
+
+class TestKobo:
+    def test_kobo_info_authenticated(self, admin_headers):
+        r = requests.get(f"{API}/kobo/info", headers=admin_headers, timeout=30)
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert d["header_name"] == "X-Kobo-Token"
+        assert d["header_value"] == KOBO_SECRET
+        assert "/api/kobo/webhook" in d["webhook_url"]
+        assert isinstance(d["instructions"], list) and len(d["instructions"]) >= 4
+
+    def test_kobo_info_requires_auth(self):
+        r = requests.get(f"{API}/kobo/info", timeout=20)
+        assert r.status_code == 401
+
+    def test_webhook_no_token_unauthorized(self):
+        r = requests.post(f"{API}/kobo/webhook", json={"_id": "x"}, timeout=20)
+        assert r.status_code == 401
+
+    def test_webhook_wrong_token_unauthorized(self):
+        r = requests.post(
+            f"{API}/kobo/webhook", json={"_id": "x"},
+            headers={"X-Kobo-Token": "WRONG"}, timeout=20,
+        )
+        assert r.status_code == 401
+
+    def test_webhook_observation_creates_observation(self, admin_headers, forests):
+        f = forests[0]
+        kobo_id = f"TEST_kobo_{uuid.uuid4().hex[:8]}"
+        payload = {
+            "_id": kobo_id,
+            "_xform_id_string": "observation_terrain",
+            "_geolocation": [f["center_lat"], f["center_lng"]],
+            "description": "TEST_kobo observation - défrichement actif",
+            "observation_type": "deforestation",
+            "_submitted_by": "agent_kobo",
+            "_submission_time": "2026-01-15T10:00:00",
+        }
+        r = requests.post(
+            f"{API}/kobo/webhook", json=payload,
+            headers={"X-Kobo-Token": KOBO_SECRET}, timeout=30,
+        )
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert d["ok"] is True
+        assert d["form_type"] == "observation"
+        assert d["submission_id"]
+        assert d["observation_id"], "observation should be auto-created"
+
+        # verify submission listed
+        rl = requests.get(f"{API}/kobo/submissions", headers=admin_headers, timeout=30)
+        assert rl.status_code == 200
+        subs = rl.json()
+        sub = next((s for s in subs if s["kobo_id"] == kobo_id), None)
+        assert sub is not None, "kobo submission should be visible"
+        assert sub["form_type"] == "observation"
+        assert sub["raw_payload"]["_id"] == kobo_id
+        assert sub["forest_id"] == f["id"]
+        assert sub["observation_id"] == d["observation_id"]
+
+        # verify observation persisted with source=kobo
+        ro = requests.get(f"{API}/observations", headers=admin_headers, timeout=30)
+        assert ro.status_code == 200
+        obs_list = ro.json()
+        match = next((o for o in obs_list if o["id"] == d["observation_id"]), None)
+        assert match is not None, "observation should be persisted"
+        assert match["source"] == "kobo"
+        assert match["kobo_submission_id"] == d["submission_id"]
+
+    def test_webhook_verification_classified(self):
+        payload = {
+            "_id": f"TEST_kobo_v_{uuid.uuid4().hex[:6]}",
+            "_xform_id_string": "verification_alerte",
+            "_geolocation": [6.10, -5.95],
+            "description": "TEST verification",
+        }
+        r = requests.post(
+            f"{API}/kobo/webhook", json=payload,
+            headers={"X-Kobo-Token": KOBO_SECRET}, timeout=30,
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["form_type"] == "verification"
+
+    def test_webhook_infraction_classified_no_observation(self):
+        payload = {
+            "_id": f"TEST_kobo_i_{uuid.uuid4().hex[:6]}",
+            "_xform_id_string": "infraction_forestiere",
+            "_geolocation": [6.10, -5.95],
+            "description": "TEST infraction",
+        }
+        r = requests.post(
+            f"{API}/kobo/webhook", json=payload,
+            headers={"X-Kobo-Token": KOBO_SECRET}, timeout=30,
+        )
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert d["form_type"] == "infraction"
+        assert d["observation_id"] is None, "infraction should not create observation"
+
+    def test_webhook_geolocation_extraction_and_nearest_forest(self, admin_headers):
+        # Sangoué center 6.10, -5.95 → expect Sangoué
+        payload = {
+            "_id": f"TEST_kobo_geo_{uuid.uuid4().hex[:6]}",
+            "_xform_id_string": "observation_terrain",
+            "_geolocation": [6.11, -5.94],
+            "description": "TEST geo extraction",
+        }
+        r = requests.post(
+            f"{API}/kobo/webhook", json=payload,
+            headers={"X-Kobo-Token": KOBO_SECRET}, timeout=30,
+        )
+        assert r.status_code == 200, r.text
+        rl = requests.get(f"{API}/kobo/submissions", headers=admin_headers, timeout=30)
+        sub = next((s for s in rl.json() if s["kobo_id"] == payload["_id"]), None)
+        assert sub is not None
+        assert abs(sub["lat"] - 6.11) < 0.001
+        assert abs(sub["lng"] - (-5.94)) < 0.001
+        # Sangoué (6.10,-5.95) is nearer than Téné (6.30,-6.05)
+        rf = requests.get(f"{API}/forests", headers=admin_headers, timeout=30)
+        sang = next(f for f in rf.json() if "Sangoué" in f["name"])
+        assert sub["forest_id"] == sang["id"]
+
+    def test_kobo_submissions_requires_auth(self):
+        r = requests.get(f"{API}/kobo/submissions", timeout=20)
+        assert r.status_code == 401
+
+
+# ------------- Stats kobo_submissions field -------------
+def test_stats_includes_kobo_submissions(admin_headers):
+    r = requests.get(f"{API}/stats/dashboard", headers=admin_headers, timeout=30)
+    assert r.status_code == 200
+    totals = r.json()["totals"]
+    assert "kobo_submissions" in totals
+    assert isinstance(totals["kobo_submissions"], int)

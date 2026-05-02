@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_LABEL } from "@/lib/constants";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import {
-  LayoutDashboard, MapPin, Bell, Eye, Plane, Sparkles, Trees, Brain, Users, LogOut, Trees as Logo
+  LayoutDashboard, MapPin, Bell, Eye, Plane, Sparkles, Trees, Brain, Users, LogOut, Trees as Logo, ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
@@ -17,6 +17,7 @@ const NAV = [
   { to: "/dashboard/predictions", label: "Prédictions", icon: Sparkles, roles: null },
   { to: "/dashboard/gee", label: "Indices GEE", icon: MapPin, roles: null },
   { to: "/dashboard/ai", label: "Analyse IA", icon: Brain, roles: null },
+  { to: "/dashboard/kobo", label: "Soumissions Kobo", icon: ClipboardList, roles: null },
   { to: "/dashboard/forests", label: "Forêts classées", icon: Trees, roles: null },
   { to: "/dashboard/users", label: "Utilisateurs", icon: Users, roles: ["admin"] },
 ];

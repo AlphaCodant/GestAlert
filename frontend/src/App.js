@@ -13,6 +13,7 @@ import DroneMissions from "@/pages/DroneMissions";
 import Predictions from "@/pages/Predictions";
 import GEEIndices from "@/pages/GEEIndices";
 import AIAnalysis from "@/pages/AIAnalysis";
+import Kobo from "@/pages/Kobo";
 import Forests from "@/pages/Forests";
 import Users from "@/pages/Users";
 
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="predictions" element={<Predictions />} />
               <Route path="gee" element={<GEEIndices />} />
               <Route path="ai" element={<AIAnalysis />} />
+              <Route path="kobo" element={<Kobo />} />
               <Route path="forests" element={<Forests />} />
               <Route
                 path="users"
