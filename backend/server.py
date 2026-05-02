@@ -781,7 +781,16 @@ async def list_kobo_submissions(
 @api.get("/kobo/info")
 async def kobo_webhook_info(_u: dict = Depends(get_current_user), request: Request = None):
     """Return webhook URL + token for the admin to configure Kobo."""
-    base = str(request.base_url).rstrip("/") if request else ""
+    # Prefer explicit PUBLIC_BASE_URL, then forwarded headers, then request.base_url
+    base = os.environ.get("PUBLIC_BASE_URL")
+    if not base and request:
+        forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+        forwarded_host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+        if forwarded_host:
+            base = f"{forwarded_proto}://{forwarded_host}"
+        else:
+            base = str(request.base_url).rstrip("/")
+    base = (base or "").rstrip("/")
     return {
         "webhook_url": f"{base}/api/kobo/webhook",
         "header_name": "X-Kobo-Token",
