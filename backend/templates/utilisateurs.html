@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Utilisateurs · GestPro{% endblock %}
+{% block content %}
+<div class="flex-between" style="margin-bottom:1rem;">
+  <div><div class="section-eyebrow">Administration</div><h1>Utilisateurs</h1></div>
+  <button class="btn" onclick="openModal('new-u')">+ Nouvel utilisateur</button>
+</div>
+<div class="card"><table><thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Créé</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="modal-backdrop" id="new-u">
+  <div class="modal">
+    <h3>Créer un utilisateur</h3>
+    <div class="form-row"><label>Nom complet</label><input id="u-name"></div>
+    <div class="form-row"><label>Email</label><input id="u-email" type="email"></div>
+    <div class="form-row"><label>Mot de passe</label><input id="u-pwd" type="password"></div>
+    <div class="form-row"><label>Rôle</label><select id="u-role"><option value="agent_terrain">Agent terrain</option><option value="analyste_sig">Analyste SIG</option><option value="pilote_drone">Pilote drone</option><option value="admin">Administrateur</option></select></div>
+    <div class="flex" style="justify-content:flex-end;"><button class="btn btn-ghost" onclick="closeModal('new-u')">Annuler</button><button class="btn" id="u-submit">Créer</button></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const ROLE = { admin:'Administrateur', analyste_sig:'Analyste SIG', agent_terrain:'Agent terrain', pilote_drone:'Pilote drone' };
+async function load() {
+  const us = await api.get('/users');
+  document.getElementById('rows').innerHTML = us.map(u => `<tr><td><b>${u.full_name}</b></td><td>${u.email}</td><td><span class="badge">${ROLE[u.role]||u.role}</span></td><td class="text-small text-muted">${fmtDateTime(u.created_at)}</td><td><button class="btn btn-ghost btn-sm" onclick="del('${u.id}')">🗑</button></td></tr>`).join('');
+}
+window.del = async (id) => { if (!confirm('Supprimer ?')) return; try { await api.del(`/users/${id}`); toast('Supprimé'); load(); } catch(e) { toast(e.message,'error'); } };
+document.getElementById('u-submit').onclick = async () => {
+  try {
+    await api.post('/auth/register', { full_name: document.getElementById('u-name').value, email: document.getElementById('u-email').value, password: document.getElementById('u-pwd').value, role: document.getElementById('u-role').value });
+    closeModal('new-u'); toast('Utilisateur créé'); load();
+  } catch(e) { toast(e.message,'error'); }
+};
+load();
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Observations · GestPro{% endblock %}
+{% block content %}
+<div class="flex-between" style="margin-bottom:1rem;">
+  <div><div class="section-eyebrow">Module</div><h1>Observations terrain</h1><p class="text-muted">Données collectées par les agents et via Kobo</p></div>
+  <button class="btn" onclick="openModal('create-obs')">+ Nouvelle observation</button>
+</div>
+<div class="card"><div id="map" style="height:320px;"></div></div>
+<div id="list" class="grid grid-3" style="margin-top:1rem;"></div>
+<div class="modal-backdrop" id="create-obs">
+  <div class="modal">
+    <h3>Nouvelle observation</h3>
+    <div class="form-row"><label>Forêt</label><select id="o-forest"></select></div>
+    <div class="form-row"><label>Type</label><select id="o-type"><option value="deforestation">Déforestation</option><option value="agriculture_illegale">Agriculture illégale</option><option value="feu_de_brousse">Feu de brousse</option><option value="exploitation_illegale">Exploitation illégale</option><option value="autre">Autre</option></select></div>
+    <div class="grid grid-2"><div class="form-row"><label>Latitude</label><input id="o-lat" type="number" step="0.00001"></div><div class="form-row"><label>Longitude</label><input id="o-lng" type="number" step="0.00001"></div></div>
+    <button class="btn btn-outline btn-sm" onclick="geolocate()">📍 Ma position</button>
+    <div class="form-row" style="margin-top:.75rem;"><label>Description</label><textarea id="o-desc" rows="3"></textarea></div>
+    <div class="form-row"><label>Photo (URL, optionnel)</label><input id="o-photo" type="url"></div>
+    <div class="flex" style="justify-content:flex-end;"><button class="btn btn-ghost" onclick="closeModal('create-obs')">Annuler</button><button class="btn" id="o-submit">Enregistrer</button></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function load() {
+  const [obs, fs] = await Promise.all([api.get('/observations'), api.get('/forests')]);
+  document.getElementById('o-forest').innerHTML = fs.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  document.getElementById('list').innerHTML = obs.map(o => `
+    <div class="card"><div class="section-eyebrow">${LABELS.type[o.observation_type]||o.observation_type}${o.source==='kobo'?' · KOBO':''}</div>
+    <p style="margin-top:.5rem;">${o.description}</p>
+    <div class="text-small text-muted" style="margin-top:1rem;border-top:1px solid var(--border);padding-top:.5rem;">par <b>${o.agent_name}</b><br>${fmtDateTime(o.created_at)}<br><code class="text-mono">${o.lat?.toFixed(4)}, ${o.lng?.toFixed(4)}</code></div></div>`).join('') || '<p class="text-muted">Aucune observation</p>';
+  if (window._map) window._map.remove();
+  window._map = L.map('map').setView([6.20,-6.0], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window._map);
+  obs.forEach(o => L.marker([o.lat,o.lng]).bindPopup(`<b>${LABELS.type[o.observation_type]||o.observation_type}</b><br>${o.description}<br><em>par ${o.agent_name}</em>`).addTo(window._map));
+}
+window.geolocate = () => navigator.geolocation?.getCurrentPosition(p => { document.getElementById('o-lat').value=p.coords.latitude.toFixed(5); document.getElementById('o-lng').value=p.coords.longitude.toFixed(5); });
+document.getElementById('o-submit').onclick = async () => {
+  try {
+    await api.post('/observations', { forest_id: document.getElementById('o-forest').value, observation_type: document.getElementById('o-type').value, lat: parseFloat(document.getElementById('o-lat').value), lng: parseFloat(document.getElementById('o-lng').value), description: document.getElementById('o-desc').value, photo_url: document.getElementById('o-photo').value || null });
+    closeModal('create-obs'); toast('Observation enregistrée'); load();
+  } catch (e) { toast(e.message, 'error'); }
+};
+load();
+</script>
+{% endblock %}

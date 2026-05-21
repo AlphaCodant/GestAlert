@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Forêts classées · GestPro{% endblock %}
+{% block content %}
+<div class="section-eyebrow">Périmètre</div>
+<h1>Forêts classées</h1>
+<p class="text-muted">Centre de Gestion de Gagnoa</p>
+<div class="card"><div id="map" style="height:480px;"></div></div>
+<div id="list" class="grid grid-2" style="margin-top:1rem;"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+(async () => {
+  const fs = await api.get('/forests');
+  document.getElementById('list').innerHTML = fs.map(f => `
+    <div class="card"><div class="flex" style="margin-bottom:1rem;"><div style="width:48px;height:48px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🌲</div>
+    <div><div class="section-eyebrow">${f.code}</div><h3>${f.name}</h3></div></div>
+    <div class="grid grid-2"><div><div class="section-eyebrow">Superficie</div><div class="kpi-value" style="color:var(--primary);">${f.area_ha.toLocaleString('fr-FR')} <small>ha</small></div></div>
+    <div><div class="section-eyebrow">Région</div><div>📍 ${f.region}</div></div></div>
+    <p class="text-small text-muted" style="margin-top:1rem;">${f.description}</p></div>`).join('');
+  const map = L.map('map').setView([6.20,-6.0], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  fs.forEach(f => L.circle([f.center_lat, f.center_lng], { radius: Math.sqrt(f.area_ha*10000/Math.PI), color:'#1e5128', fillOpacity:0.2 }).bindPopup(`<b>${f.name}</b><br>${f.area_ha.toLocaleString('fr-FR')} ha`).addTo(map));
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GestPro · Surveillance des Forêts Classées de Gagnoa{% endblock %}</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+{% if user %}
+<nav class="topnav">
+  <div class="topnav-brand">
+    <a href="/dashboard"><span class="logo">🌲</span> <strong>GestPro</strong> <small>Gagnoa</small></a>
+  </div>
+  <ul class="topnav-links">
+    <li><a href="/dashboard" class="{% if request.url.path.startswith('/dashboard') %}active{% endif %}">Tableau de bord</a></li>
+    <li><a href="/alertes" class="{% if request.url.path == '/alertes' %}active{% endif %}">Alertes</a></li>
+    <li><a href="/observations" class="{% if request.url.path == '/observations' %}active{% endif %}">Observations</a></li>
+    <li><a href="/drones" class="{% if request.url.path == '/drones' %}active{% endif %}">Drones</a></li>
+    <li><a href="/predictions" class="{% if request.url.path == '/predictions' %}active{% endif %}">Prédictions</a></li>
+    <li><a href="/gee" class="{% if request.url.path == '/gee' %}active{% endif %}">GEE</a></li>
+    <li><a href="/ai" class="{% if request.url.path == '/ai' %}active{% endif %}">IA Claude</a></li>
+    <li><a href="/kobo" class="{% if request.url.path == '/kobo' %}active{% endif %}">Kobo</a></li>
+    <li><a href="/forets" class="{% if request.url.path == '/forets' %}active{% endif %}">Forêts</a></li>
+    {% if user.role == 'admin' %}<li><a href="/utilisateurs" class="{% if request.url.path == '/utilisateurs' %}active{% endif %}">Utilisateurs</a></li>{% endif %}
+  </ul>
+  <div class="topnav-user">
+    <span>{{ user.full_name }} <em>· {{ user.role }}</em></span>
+    <a href="/log/deconnecter" class="btn btn-ghost">Déconnexion</a>
+  </div>
+</nav>
+{% endif %}
+<main class="main">
+  {% block content %}{% endblock %}
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/js/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

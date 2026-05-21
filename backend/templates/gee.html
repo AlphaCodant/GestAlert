@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Indices GEE · GestPro{% endblock %}
+{% block content %}
+<div class="flex-between" style="margin-bottom:1rem;">
+  <div><div class="section-eyebrow">Google Earth Engine</div><h1>Indices spectraux</h1><p class="text-muted">NDVI · NBR · NDWI + classification couverture</p></div>
+  <select id="forest" class="form-row" style="margin:0;padding:.5rem;width:auto;"></select>
+</div>
+<div class="grid grid-4" id="kpis"></div>
+<div class="card" style="margin-top:1rem;"><h3>Évolution mensuelle</h3><canvas id="chart" height="80"></canvas></div>
+<div class="card"><h3>Couverture des sols</h3><div class="grid grid-2"><canvas id="pie" height="200"></canvas><div id="legend"></div></div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+let chart, pie;
+async function load() {
+  const fs = await api.get('/forests');
+  const sel = document.getElementById('forest');
+  sel.innerHTML = fs.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  sel.onchange = render;
+  render();
+}
+async function render() {
+  const fid = document.getElementById('forest').value;
+  const [i, lc] = await Promise.all([api.get(`/gee/indices/${fid}`), api.get(`/gee/landcover/${fid}`)]);
+  document.getElementById('kpis').innerHTML = `
+    <div class="card kpi"><div class="kpi-label">NDVI actuel</div><div class="kpi-value">${i.summary.ndvi_current}</div></div>
+    <div class="card kpi"><div class="kpi-label">Tendance NDVI</div><div class="kpi-value" style="color:${i.summary.ndvi_trend<0?'var(--destructive)':'#16a34a'};">${i.summary.ndvi_trend>0?'+':''}${i.summary.ndvi_trend}</div></div>
+    <div class="card kpi"><div class="kpi-label">Statut</div><div class="kpi-value" style="text-transform:capitalize;">${i.summary.ndvi_status}</div></div>
+    <div class="card kpi"><div class="kpi-label">Sources</div><div class="text-small">${i.satellite_sources.join('<br>')}</div></div>`;
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('chart'), {
+    type:'line', data:{ labels: i.time_series.map(x=>x.month), datasets:[
+      { label:'NDVI (végétation)', data:i.time_series.map(x=>x.ndvi), borderColor:'#1e5128', tension:.3 },
+      { label:'NBR (incendies)', data:i.time_series.map(x=>x.nbr), borderColor:'#dc2626', tension:.3 },
+      { label:'NDWI (eau)', data:i.time_series.map(x=>x.ndwi), borderColor:'#2563eb', tension:.3 }
+    ]}, options:{ scales:{ y:{ min:0, max:1 } } }
+  });
+  if (pie) pie.destroy();
+  pie = new Chart(document.getElementById('pie'), {
+    type:'doughnut', data:{ labels: lc.classes.map(c=>c.name), datasets:[{ data: lc.classes.map(c=>c.percent), backgroundColor: lc.classes.map(c=>c.color) }] }
+  });
+  document.getElementById('legend').innerHTML = lc.classes.map(c => `<div class="flex" style="justify-content:space-between;padding:.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:.25rem;"><span><span style="display:inline-block;width:12px;height:12px;background:${c.color};border-radius:2px;margin-right:.5rem;"></span>${c.name}</span><b>${c.percent}%</b></div>`).join('') + `<div class="text-small text-muted" style="margin-top:.5rem;">${lc.source} · ${lc.resolution_m}m</div>`;
+}
+load();
+</script>
+{% endblock %}

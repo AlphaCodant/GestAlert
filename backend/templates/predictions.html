@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Prédictions · GestPro{% endblock %}
+{% block content %}
+<div class="flex-between" style="margin-bottom:1rem;">
+  <div><div class="section-eyebrow">Module IA</div><h1>Prédictions de déforestation</h1><p class="text-muted">Carte de probabilité à 90 jours</p></div>
+  <select id="forest" class="form-row" style="margin:0;padding:.5rem;width:auto;"></select>
+</div>
+<div class="grid" style="grid-template-columns: 3fr 1fr;">
+  <div class="card"><div id="map" style="height:500px;"></div></div>
+  <div>
+    <div class="card"><div class="section-eyebrow">Modèle</div><p id="model" class="text-small"></p></div>
+    <div class="card"><div class="section-eyebrow">Zones haut risque</div><div id="hrc" class="kpi-value" style="color:var(--destructive);"></div></div>
+    <div class="card"><div class="section-eyebrow">Top 5 zones critiques</div><div id="top5" class="text-mono text-small"></div></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function load() {
+  const fs = await api.get('/forests');
+  const sel = document.getElementById('forest');
+  sel.innerHTML = fs.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  sel.onchange = render;
+  render();
+}
+async function render() {
+  const fid = document.getElementById('forest').value;
+  if (!fid) return;
+  const d = await api.get(`/predictions/${fid}`);
+  document.getElementById('model').textContent = d.model;
+  document.getElementById('hrc').textContent = d.high_risk_count;
+  document.getElementById('top5').innerHTML = d.high_risk_zones.slice(0,5).map(z => `<div style="border-left:2px solid var(--destructive);padding-left:.5rem;margin:.25rem 0;">${z.lat.toFixed(4)}, ${z.lng.toFixed(4)} · <b style="color:var(--destructive);">${Math.round(z.risk*100)}%</b></div>`).join('');
+  if (window._map) window._map.remove();
+  window._map = L.map('map').setView([d.forest.center_lat, d.forest.center_lng], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window._map);
+  d.cells.forEach(c => L.circleMarker([c.lat,c.lng], { radius: 6 + c.risk*8, color: c.risk>0.7?'#dc2626':c.risk>0.4?'#f59e0b':'#84cc16', fillOpacity:0.5 }).bindPopup(`Risque: ${Math.round(c.risk*100)}%`).addTo(window._map));
+}
+load();
+</script>
+{% endblock %}

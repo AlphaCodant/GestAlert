@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Kobo Toolbox · GestPro{% endblock %}
+{% block content %}
+<div class="section-eyebrow">Intégration</div>
+<h1>Soumissions Kobo Toolbox</h1>
+<p class="text-muted">Centralisation des formulaires de vérification terrain</p>
+<div class="card" style="background:var(--accent);">
+  <h3>⚙️ Configuration du webhook</h3>
+  <div class="form-row"><label>Endpoint URL</label><div class="flex"><code class="text-mono" style="flex:1;background:var(--card);padding:.55rem;border:1px solid var(--border);border-radius:6px;">{{ webhook_url }}</code><button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('{{ webhook_url }}');toast('Copié')">📋</button></div></div>
+  <div class="form-row"><label>Custom HTTP Header — X-Kobo-Token</label><div class="flex"><code class="text-mono" style="flex:1;background:var(--card);padding:.55rem;border:1px solid var(--border);border-radius:6px;">{{ kobo_token }}</code><button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('{{ kobo_token }}');toast('Copié')">📋</button></div></div>
+  <ol class="text-small text-muted" style="margin-top:1rem;">
+    <li>Sur kf.kobotoolbox.org → votre formulaire → Settings → REST Services → Register a new service</li>
+    <li>Service Name : <b>GestPro</b></li>
+    <li>Endpoint URL : copier ci-dessus</li>
+    <li>Custom HTTP Headers : ajouter <code>X-Kobo-Token</code> = token ci-dessus</li>
+    <li>Sauvegarder</li>
+  </ol>
+  <a href="https://kf.kobotoolbox.org" target="_blank" class="text-small">→ Ouvrir Kobo Toolbox</a>
+</div>
+<div class="card"><div id="map" style="height:320px;"></div></div>
+<div class="card">
+  <table><thead><tr><th>Type</th><th>Soumis par</th><th>Position</th><th>Description</th><th>Statut</th><th>Reçu</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+</div>
+<div class="card" id="payload-box" style="display:none;">
+  <div class="flex-between"><h3>Payload brut Kobo</h3><button class="btn btn-ghost" onclick="document.getElementById('payload-box').style.display='none'">Fermer</button></div>
+  <pre class="json" id="payload"></pre>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const FT = { observation:'Observation', verification:'Vérification', infraction:'Infraction' };
+async function load() {
+  const subs = await api.get('/kobo/submissions');
+  document.getElementById('rows').innerHTML = subs.map(s => `
+    <tr><td><span class="badge badge-${s.form_type}">${FT[s.form_type]||s.form_type}</span></td>
+    <td><b>${s.submitted_by||'—'}</b></td>
+    <td class="text-mono text-small">${s.lat!=null?`${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}`:'—'}</td>
+    <td class="text-small" style="max-width:300px;">${(s.description||'').substring(0,80)}</td>
+    <td>${s.processed?'<span style="color:#16a34a;">✓ Traité</span>':'<span class="text-muted">En attente</span>'}</td>
+    <td class="text-small text-muted">${fmtDateTime(s.received_at)}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick='showPayload(${JSON.stringify(s.raw_payload)})'>Voir</button></td></tr>`).join('') || '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:2rem;">Aucune soumission. Configurez le webhook ci-dessus.</td></tr>';
+  if (window._map) window._map.remove();
+  window._map = L.map('map').setView([6.20,-6.0], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window._map);
+  subs.filter(s=>s.lat&&s.lng).forEach(s => L.marker([s.lat,s.lng]).bindPopup(`<b>${FT[s.form_type]}</b><br>${s.description||''}<br><em>par ${s.submitted_by||'Kobo'}</em>`).addTo(window._map));
+}
+window.showPayload = (p) => { document.getElementById('payload').textContent = JSON.stringify(p, null, 2); document.getElementById('payload-box').style.display='block'; };
+load();
+</script>
+{% endblock %}

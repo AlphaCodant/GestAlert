@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Connexion · GestPro{% endblock %}
+{% block content %}
+<div style="max-width: 420px; margin: 4rem auto;">
+  <div style="text-align:center; margin-bottom:2rem;">
+    <div style="font-size:2.5rem;">🌲</div>
+    <h1 style="font-size:2rem;">GestPro</h1>
+    <p class="text-muted">Surveillance des Forêts Classées · Gagnoa</p>
+  </div>
+  <div class="card">
+    <h3>Connexion</h3>
+    {% for e in error %}<div class="alert-banner error">{{ e }}</div>{% endfor %}
+    {% for s in success %}<div class="alert-banner success">{{ s }}</div>{% endfor %}
+    <form method="post" action="/connexion">
+      <div class="form-row">
+        <label>Email</label>
+        <input type="email" name="email" required placeholder="admin@gestpro.ci">
+      </div>
+      <div class="form-row">
+        <label>Mot de passe</label>
+        <input type="password" name="mp" required placeholder="••••••••">
+      </div>
+      <button class="btn" style="width:100%;justify-content:center;">Se connecter</button>
+    </form>
+    <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--border);">
+    <div class="text-small text-muted" style="margin-bottom:.5rem;">Comptes de démonstration</div>
+    <div class="grid grid-2" style="gap:.5rem;">
+      <button type="button" class="btn-outline btn btn-sm" onclick="document.querySelector('[name=email]').value='admin@gestpro.ci';document.querySelector('[name=mp]').value='GestPro2026!'">Administrateur</button>
+      <button type="button" class="btn-outline btn btn-sm" onclick="document.querySelector('[name=email]').value='analyste@gestpro.ci';document.querySelector('[name=mp]').value='Analyste2026!'">Analyste SIG</button>
+      <button type="button" class="btn-outline btn btn-sm" onclick="document.querySelector('[name=email]').value='agent@gestpro.ci';document.querySelector('[name=mp]').value='Agent2026!'">Agent terrain</button>
+      <button type="button" class="btn-outline btn btn-sm" onclick="document.querySelector('[name=email]').value='pilote@gestpro.ci';document.querySelector('[name=mp]').value='Pilote2026!'">Pilote drone</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

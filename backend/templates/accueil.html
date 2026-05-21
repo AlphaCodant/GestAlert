@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}GestPro · Accueil{% endblock %}
+{% block content %}
+<div class="hero">
+  <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.2em;font-weight:600;margin-bottom:1rem;">Centre de Gestion de Gagnoa · Côte d'Ivoire</div>
+  <h1>Surveiller les forêts classées en temps quasi-réel.</h1>
+  <p>GestPro combine imagerie satellitaire (Sentinel-2, Landsat, MODIS), intelligence artificielle, drones multispectraux et observations terrain pour détecter les activités illégales sur les Forêts Classées de Sangoué (36 200 ha) et Téné (29 700 ha).</p>
+  <p style="margin-top:1.5rem;"><a href="/connexion" class="btn" style="background:white;color:var(--primary);border-color:white;">Accéder à la plateforme →</a></p>
+</div>
+<div class="grid grid-4">
+  <div class="card"><h3>🛰 Satellites</h3><p class="text-small text-muted">Indices NDVI/NBR/NDWI calculés automatiquement.</p></div>
+  <div class="card"><h3>🧠 IA Claude</h3><p class="text-small text-muted">Analyse contextuelle des observations terrain.</p></div>
+  <div class="card"><h3>✈️ Drones</h3><p class="text-small text-muted">DJI Mavic 3 Multispectral, 3-5 cm/pixel.</p></div>
+  <div class="card"><h3>📋 Kobo</h3><p class="text-small text-muted">Webhook bidirectionnel pour vérifications.</p></div>
+</div>
+{% endblock %}

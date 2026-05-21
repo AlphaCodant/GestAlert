@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Missions drone · GestPro{% endblock %}
+{% block content %}
+<div class="flex-between" style="margin-bottom:1rem;">
+  <div><div class="section-eyebrow">Module</div><h1>Missions drone</h1><p class="text-muted">Planification & suivi des survols DJI Mavic 3 Multispectral</p></div>
+  <button class="btn" onclick="openModal('create-mission')">+ Nouvelle mission</button>
+</div>
+<div class="card"><div id="map" style="height:320px;"></div></div>
+<div id="list" class="grid grid-3" style="margin-top:1rem;"></div>
+<div class="modal-backdrop" id="create-mission">
+  <div class="modal">
+    <h3>Planifier une mission</h3>
+    <div class="form-row"><label>Forêt</label><select id="m-forest"></select></div>
+    <div class="form-row"><label>Date prévue</label><input id="m-date" type="datetime-local"></div>
+    <div class="grid grid-3"><div class="form-row"><label>Lat cible</label><input id="m-lat" type="number" step="0.00001"></div><div class="form-row"><label>Lng cible</label><input id="m-lng" type="number" step="0.00001"></div><div class="form-row"><label>Rayon (m)</label><input id="m-r" type="number" value="500"></div></div>
+    <div class="form-row"><label>Objectif</label><textarea id="m-purpose" rows="2"></textarea></div>
+    <div class="flex" style="justify-content:flex-end;"><button class="btn btn-ghost" onclick="closeModal('create-mission')">Annuler</button><button class="btn" id="m-submit">Planifier</button></div>
+  </div>
+</div>
+<div class="modal-backdrop" id="upd-mission">
+  <div class="modal">
+    <h3>Mettre à jour</h3>
+    <div class="form-row"><label>Statut</label><select id="u-status"><option value="planifiee">Planifiée</option><option value="en_cours">En cours</option><option value="terminee">Terminée</option><option value="annulee">Annulée</option></select></div>
+    <div class="form-row"><label>Notes</label><textarea id="u-notes" rows="2"></textarea></div>
+    <div class="flex" style="justify-content:flex-end;"><button class="btn btn-ghost" onclick="closeModal('upd-mission')">Annuler</button><button class="btn" id="u-submit">Enregistrer</button></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let curr = null;
+async function load() {
+  const [ms, fs] = await Promise.all([api.get('/drone-missions'), api.get('/forests')]);
+  document.getElementById('m-forest').innerHTML = fs.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  document.getElementById('list').innerHTML = ms.map(m => `
+    <div class="card"><div class="flex-between"><span class="section-eyebrow">✈️ Mission</span><span class="badge badge-${m.status}">${LABELS.mission[m.status]}</span></div>
+    <p style="margin-top:.5rem;font-weight:600;">${m.purpose}</p>
+    <div class="text-small text-muted">Date prévue: ${fmtDateTime(m.planned_date)}<br><code class="text-mono">${m.target_lat?.toFixed(4)}, ${m.target_lng?.toFixed(4)} · ${m.radius_m}m</code>${m.ndvi_avg?'<br>NDVI: <b>'+m.ndvi_avg+'</b>':''}</div>
+    <button class="btn btn-outline btn-sm" style="margin-top:.75rem;width:100%;justify-content:center;" onclick='openU(${JSON.stringify(m)})'>Mettre à jour</button></div>`).join('') || '<p class="text-muted">Aucune mission</p>';
+  if (window._map) window._map.remove();
+  window._map = L.map('map').setView([6.20,-6.0], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window._map);
+  ms.forEach(m => L.circle([m.target_lat,m.target_lng], {radius:m.radius_m, color:'#0ea5e9', fillOpacity:.2}).bindPopup(`<b>Mission</b><br>${m.purpose}`).addTo(window._map));
+}
+window.openU = (m) => { curr=m; document.getElementById('u-status').value=m.status; document.getElementById('u-notes').value=m.notes||''; openModal('upd-mission'); };
+document.getElementById('m-submit').onclick = async () => {
+  try {
+    await api.post('/drone-missions', { forest_id: document.getElementById('m-forest').value, planned_date: new Date(document.getElementById('m-date').value).toISOString(), target_lat: parseFloat(document.getElementById('m-lat').value), target_lng: parseFloat(document.getElementById('m-lng').value), radius_m: parseFloat(document.getElementById('m-r').value), purpose: document.getElementById('m-purpose').value });
+    closeModal('create-mission'); toast('Mission planifiée'); load();
+  } catch(e) { toast(e.message,'error'); }
+};
+document.getElementById('u-submit').onclick = async () => {
+  try { await api.patch(`/drone-missions/${curr.id}`, { status: document.getElementById('u-status').value, notes: document.getElementById('u-notes').value }); closeModal('upd-mission'); toast('Mis à jour'); load(); } catch(e) { toast(e.message,'error'); }
+};
+load();
+</script>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Alertes · GestPro{% endblock %}
+{% block content %}
+<div class="flex-between" style="margin-bottom:1rem;">
+  <div>
+    <div class="section-eyebrow">Module</div>
+    <h1>Gestion des alertes</h1>
+    <p class="text-muted">Workflow : Détectée → En vérification → Confirmée → Résolue</p>
+  </div>
+  <div class="flex">
+    <select id="filter" class="form-row" style="margin:0;padding:.5rem;">
+      <option value="">Tous statuts</option>
+      <option value="detectee">Détectée</option>
+      <option value="en_verification">En vérification</option>
+      <option value="confirmee">Confirmée</option>
+      <option value="resolue">Résolue</option>
+      <option value="rejetee">Rejetée</option>
+    </select>
+    <button class="btn" onclick="openModal('create-alert')">+ Nouvelle alerte</button>
+  </div>
+</div>
+<div class="card"><div id="map"></div></div>
+<div class="card"><table><thead><tr><th>Type</th><th>Sévérité</th><th>Statut</th><th>Surface</th><th>Source</th><th>Détectée</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="modal-backdrop" id="create-alert">
+  <div class="modal">
+    <h3>Nouvelle alerte</h3>
+    <div class="form-row"><label>Forêt</label><select id="a-forest"></select></div>
+    <div class="grid grid-2">
+      <div class="form-row"><label>Type</label><select id="a-type"><option value="deforestation">Déforestation</option><option value="agriculture_illegale">Agriculture illégale</option><option value="feu_de_brousse">Feu de brousse</option><option value="exploitation_illegale">Exploitation illégale</option><option value="defrichement">Défrichement</option></select></div>
+      <div class="form-row"><label>Sévérité</label><select id="a-sev"><option value="faible">Faible</option><option value="moyenne" selected>Moyenne</option><option value="haute">Haute</option><option value="critique">Critique</option></select></div>
+      <div class="form-row"><label>Latitude</label><input id="a-lat" type="number" step="0.00001"></div>
+      <div class="form-row"><label>Longitude</label><input id="a-lng" type="number" step="0.00001"></div>
+      <div class="form-row"><label>Surface (ha)</label><input id="a-area" type="number" step="0.1" value="1"></div>
+      <div class="form-row"><label>Source</label><select id="a-src"><option value="satellite">Satellite</option><option value="drone">Drone</option><option value="terrain">Terrain</option></select></div>
+    </div>
+    <div class="form-row"><label>Description</label><textarea id="a-desc" rows="3"></textarea></div>
+    <div class="flex" style="justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeModal('create-alert')">Annuler</button>
+      <button class="btn" id="a-submit">Créer</button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="upd-status">
+  <div class="modal">
+    <h3>Modifier le statut</h3>
+    <div class="form-row"><label>Nouveau statut</label><select id="s-status"><option value="detectee">Détectée</option><option value="en_verification">En vérification</option><option value="confirmee">Confirmée</option><option value="resolue">Résolue</option><option value="rejetee">Rejetée</option></select></div>
+    <div class="form-row"><label>Note (optionnel)</label><textarea id="s-note" rows="2"></textarea></div>
+    <div id="s-history" style="max-height:200px;overflow:auto;font-size:.8rem;"></div>
+    <div class="flex" style="justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeModal('upd-status')">Annuler</button>
+      <button class="btn" id="s-submit">Confirmer</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let forests = [], current = null;
+async function load() {
+  const filter = document.getElementById('filter').value;
+  const url = filter ? `/alerts?status_filter=${filter}` : '/alerts';
+  const [alerts, fs] = await Promise.all([api.get(url), api.get('/forests')]);
+  forests = fs;
+  document.getElementById('a-forest').innerHTML = fs.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  document.getElementById('rows').innerHTML = alerts.map(a => `
+    <tr><td><b>${LABELS.type[a.alert_type]||a.alert_type}</b></td>
+    <td><span class="badge badge-${a.severity}">${LABELS.severity[a.severity]}</span></td>
+    <td><span class="badge badge-${a.status}">${LABELS.status[a.status]}</span></td>
+    <td>${a.area_ha} ha</td><td>${a.source}</td><td class="text-small text-muted">${fmtDateTime(a.created_at)}</td>
+    <td><button class="btn btn-outline btn-sm" onclick='openUpd(${JSON.stringify(a)})'>Modifier</button></td></tr>`).join('') || '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:2rem;">Aucune alerte</td></tr>';
+  if (window._map) window._map.remove();
+  window._map = L.map('map').setView([6.20,-6.0], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window._map);
+  const SEV = { faible:'#10b981', moyenne:'#f59e0b', haute:'#f97316', critique:'#dc2626' };
+  alerts.forEach(a => L.circleMarker([a.lat,a.lng], { radius:8, color:SEV[a.severity], fillOpacity:0.7 }).bindPopup(`<b>${LABELS.type[a.alert_type]}</b><br>${LABELS.severity[a.severity]} · ${LABELS.status[a.status]}`).addTo(window._map));
+}
+window.openUpd = (a) => { current = a; document.getElementById('s-status').value=a.status; document.getElementById('s-note').value=''; document.getElementById('s-history').innerHTML = (a.history||[]).map(h=>`<div style="border-left:2px solid var(--primary);padding-left:.5rem;margin:.25rem 0;"><b>${LABELS.status[h.status]||h.status}</b> · ${fmtDateTime(h.at)} · ${h.by}${h.note?'<br><em>'+h.note+'</em>':''}</div>`).join(''); openModal('upd-status'); };
+document.getElementById('filter').onchange = load;
+document.getElementById('a-forest').addEventListener('change', e => {
+  const f = forests.find(x => x.id === e.target.value);
+  if (f) { document.getElementById('a-lat').value = (f.center_lat + (Math.random()-0.5)*0.05).toFixed(5); document.getElementById('a-lng').value = (f.center_lng + (Math.random()-0.5)*0.05).toFixed(5); }
+});
+document.getElementById('a-submit').onclick = async () => {
+  try {
+    await api.post('/alerts', { forest_id: document.getElementById('a-forest').value, alert_type: document.getElementById('a-type').value, severity: document.getElementById('a-sev').value, lat: parseFloat(document.getElementById('a-lat').value), lng: parseFloat(document.getElementById('a-lng').value), area_ha: parseFloat(document.getElementById('a-area').value), description: document.getElementById('a-desc').value, source: document.getElementById('a-src').value });
+    closeModal('create-alert'); toast('Alerte créée'); load();
+  } catch (e) { toast(e.message, 'error'); }
+};
+document.getElementById('s-submit').onclick = async () => {
+  try {
+    await api.patch(`/alerts/${current.id}/status`, { status: document.getElementById('s-status').value, note: document.getElementById('s-note').value });
+    closeModal('upd-status'); toast('Statut mis à jour'); load();
+  } catch (e) { toast(e.message, 'error'); }
+};
+load();
+</script>
+{% endblock %}

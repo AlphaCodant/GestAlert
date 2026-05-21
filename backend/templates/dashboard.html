@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord · GestPro{% endblock %}
+{% block content %}
+<div class="section-eyebrow">Tableau de bord</div>
+<h1>Surveillance des forêts classées</h1>
+<p class="text-muted">FC Sangoué · FC Téné</p>
+<div class="grid grid-4" id="kpis" style="margin-top:1.5rem;"></div>
+<div class="grid" style="grid-template-columns: 3fr 1fr; margin-top:1rem;">
+  <div class="card"><h3>Carte SIG</h3><div id="map"></div></div>
+  <div class="card"><h3>Alertes récentes</h3><div id="recent"></div></div>
+</div>
+<div class="card" style="margin-top:1rem;">
+  <h3>Répartition par type</h3>
+  <div class="grid grid-4" id="by-type"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(async () => {
+  const [stats, alerts, forests, obs, missions] = await Promise.all([
+    api.get('/stats/dashboard'), api.get('/alerts'), api.get('/forests'),
+    api.get('/observations'), api.get('/drone-missions'),
+  ]);
+  const t = stats.totals;
+  document.getElementById('kpis').innerHTML = `
+    <div class="card kpi"><div class="kpi-label">Alertes</div><div class="kpi-value">${t.alerts}</div><div class="kpi-sub">${t.pending} en attente</div></div>
+    <div class="card kpi"><div class="kpi-label">Observations</div><div class="kpi-value">${t.observations}</div><div class="kpi-sub">terrain + kobo</div></div>
+    <div class="card kpi"><div class="kpi-label">Missions drone</div><div class="kpi-value">${t.drone_missions}</div><div class="kpi-sub">planifiées/terminées</div></div>
+    <div class="card kpi"><div class="kpi-label">Forêts</div><div class="kpi-value">${t.forests}</div><div class="kpi-sub">${(t.total_area_ha||0).toLocaleString('fr-FR')} ha</div></div>
+  `;
+  const SEV = { faible:'#10b981', moyenne:'#f59e0b', haute:'#f97316', critique:'#dc2626' };
+  const map = L.map('map').setView([6.20, -6.0], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  forests.forEach(f => L.circle([f.center_lat, f.center_lng], { radius: Math.sqrt(f.area_ha*10000/Math.PI), color:'#1e5128', fillOpacity:0.15 }).bindPopup(`<b>${f.name}</b><br>${f.area_ha.toLocaleString('fr-FR')} ha`).addTo(map));
+  alerts.forEach(a => L.circleMarker([a.lat, a.lng], { radius:8, color:SEV[a.severity]||'#dc2626', fillOpacity:0.7 }).bindPopup(`<b>${LABELS.type[a.alert_type]}</b><br>Sévérité: ${a.severity}<br>Statut: ${LABELS.status[a.status]}`).addTo(map));
+  obs.forEach(o => L.marker([o.lat, o.lng]).bindPopup(`<b>${LABELS.type[o.observation_type]||o.observation_type}</b><br>${o.description}`).addTo(map));
+  missions.forEach(m => L.circle([m.target_lat, m.target_lng], { radius:m.radius_m, color:'#0ea5e9', fillOpacity:0.15 }).bindPopup(`Mission: ${m.purpose}`).addTo(map));
+  document.getElementById('recent').innerHTML = stats.recent_alerts.map(a => `
+    <div style="border-left:3px solid var(--primary);padding-left:.75rem;margin-bottom:.75rem;">
+      <div style="font-weight:600;font-size:.85rem;">${LABELS.type[a.alert_type]||a.alert_type}</div>
+      <div class="text-small text-muted">${fmtDateTime(a.created_at)}</div>
+    </div>`).join('') || '<p class="text-muted text-small">Aucune alerte</p>';
+  document.getElementById('by-type').innerHTML = stats.alerts_by_type.map(x => `
+    <div class="card-flat"><div class="kpi-label">${LABELS.type[x.type]||x.type}</div><div class="kpi-value">${x.count}</div></div>`).join('');
+})();
+</script>
+{% endblock %}

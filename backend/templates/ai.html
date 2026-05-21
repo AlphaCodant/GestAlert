@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Analyse IA · GestPro{% endblock %}
+{% block content %}
+<div class="section-eyebrow">Module IA</div>
+<h1>Analyse intelligente</h1>
+<p class="text-muted">Soumettez une observation à <b>Claude Sonnet 4.5</b> pour analyse, gravité et recommandations.</p>
+<div class="grid" style="grid-template-columns: 2fr 1fr; margin-top:1rem;">
+  <div class="card">
+    <div class="form-row"><label>Observation à analyser</label><textarea id="text" rows="5"></textarea></div>
+    <div class="form-row"><label>Contexte (optionnel)</label><input id="ctx" placeholder="Ex: FC Sangoué, secteur Nord, après alerte Sentinel-2"></div>
+    <div class="flex" style="flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
+      <button class="btn btn-outline btn-sm" onclick="setEx('Plantation récente de cacao d\'environ 5 ha détectée à l\'intérieur de la forêt classée.')">Exemple 1</button>
+      <button class="btn btn-outline btn-sm" onclick="setEx('Feu de brousse étendu sur la limite Sud - environ 12 ha brûlés. Vent fort.')">Exemple 2</button>
+      <button class="btn btn-outline btn-sm" onclick="setEx('Plusieurs arbres récemment coupés à proximité d\'une piste illégale.')">Exemple 3</button>
+    </div>
+    <button class="btn" id="run">🧠 Analyser avec Claude</button>
+    <div id="result" style="display:none;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+      <div class="section-eyebrow" style="color:var(--primary);">Analyse IA · <span id="model"></span></div>
+      <div id="response" style="white-space:pre-wrap;margin-top:.75rem;"></div>
+    </div>
+  </div>
+  <div class="card" style="max-height:600px;overflow:auto;">
+    <h3>Historique</h3>
+    <div id="hist"></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+window.setEx = (t) => document.getElementById('text').value = t;
+async function loadHist() {
+  const h = await api.get('/ai/history');
+  document.getElementById('hist').innerHTML = h.map(x => `<div style="border-left:2px solid var(--primary);padding-left:.5rem;margin-bottom:.75rem;"><div class="text-small text-muted">${fmtDateTime(x.created_at)}</div><div class="text-small" style="font-weight:500;">${x.input_text.substring(0,80)}…</div><button class="btn btn-ghost btn-sm" onclick='showResult(${JSON.stringify(x)})'>Voir</button></div>`).join('') || '<p class="text-small text-muted">Aucune analyse</p>';
+}
+window.showResult = (x) => { document.getElementById('model').textContent = x.model; document.getElementById('response').textContent = x.response; document.getElementById('result').style.display='block'; };
+document.getElementById('run').onclick = async () => {
+  const text = document.getElementById('text').value.trim();
+  if (!text) return;
+  const btn = document.getElementById('run');
+  btn.disabled = true; btn.textContent = '⏳ Analyse en cours… (~15-25s)';
+  try {
+    const r = await api.post('/ai/analyze', { text, context: document.getElementById('ctx').value || null });
+    showResult(r); loadHist();
+  } catch(e) { toast(e.message,'error'); }
+  finally { btn.disabled = false; btn.textContent = '🧠 Analyser avec Claude'; }
+};
+loadHist();
+</script>
+{% endblock %}
