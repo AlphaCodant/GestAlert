@@ -9,20 +9,47 @@ Méthode (Sentinel-2 niveau 2A, 10 m) :
    surface minimale sont écartés. Chaque polygone reçoit ses indices moyens et sa
    distance au réseau hydrographique (l'orpaillage alluvionnaire longe les cours d'eau).
 
-Identification par compte de service Google : variables d'environnement
-GEE_SERVICE_ACCOUNT (adresse e-mail du compte) et GEE_PRIVATE_KEY_FILE (chemin de la
-clé JSON) ; GEE_PROJECT est facultatif.
+Identification par compte de service Google, au choix :
+- GEE_PRIVATE_KEY_FILE : chemin du fichier de clé JSON (poste local, serveur) ;
+- GEE_SERVICE_ACCOUNT_JSON : contenu complet du fichier JSON (hébergeurs comme Render,
+  où l'on ne dépose pas de fichier).
+GEE_PROJECT est facultatif : à défaut, le project_id de la clé est utilisé.
+La clé ne doit jamais être versionnée (voir .gitignore).
 """
 from __future__ import annotations
 
+import json
 import os
 from typing import Optional
 
 _initialized = False
 
 
+def _key_info() -> Optional[dict]:
+    raw = os.environ.get("GEE_SERVICE_ACCOUNT_JSON")
+    if raw:
+        return json.loads(raw)
+    path = os.environ.get("GEE_PRIVATE_KEY_FILE")
+    if path and os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
 def gee_configured() -> bool:
-    return bool(os.environ.get("GEE_SERVICE_ACCOUNT") and os.environ.get("GEE_PRIVATE_KEY_FILE"))
+    try:
+        info = _key_info()
+    except (ValueError, OSError):
+        return False
+    return bool(info and info.get("type") == "service_account" and info.get("private_key") and info.get("client_email"))
+
+
+def gee_identity() -> Optional[dict]:
+    """Compte et projet utilisés (sans aucun secret), pour l'affichage."""
+    if not gee_configured():
+        return None
+    info = _key_info()
+    return {"service_account": info["client_email"], "project": os.environ.get("GEE_PROJECT") or info.get("project_id")}
 
 
 def _init():
@@ -30,11 +57,29 @@ def _init():
     if _initialized:
         return
     import ee  # import tardif : le module reste facultatif en mode simulation
+    from google.oauth2 import service_account
 
-    creds = ee.ServiceAccountCredentials(os.environ["GEE_SERVICE_ACCOUNT"], os.environ["GEE_PRIVATE_KEY_FILE"])
-    project = os.environ.get("GEE_PROJECT")
-    ee.Initialize(creds, project=project) if project else ee.Initialize(creds)
+    info = _key_info()
+    if not info:
+        raise RuntimeError("Clé du compte de service GEE introuvable (GEE_PRIVATE_KEY_FILE ou GEE_SERVICE_ACCOUNT_JSON)")
+    info = {k: v for k, v in info.items() if k != "private_key_id" or (v and "..." not in v)}
+    creds = service_account.Credentials.from_service_account_info(
+        info, scopes=["https://www.googleapis.com/auth/earthengine", "https://www.googleapis.com/auth/cloud-platform"],
+    )
+    project = os.environ.get("GEE_PROJECT") or info.get("project_id")
+    ee.Initialize(creds, project=project)
     _initialized = True
+
+
+def check_connection() -> dict:
+    """Vérifie l'accès à GEE et à Sentinel-2 sur un point de Gagnoa."""
+    _init()
+    import ee
+
+    pt = ee.Geometry.Point([-5.95, 6.13])
+    n = (ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterBounds(pt)
+         .filterDate("2026-01-01", "2026-03-01").size().getInfo())
+    return {"ok": True, "sentinel2_images_gagnoa_jan_fev_2026": n, **(gee_identity() or {})}
 
 
 def _composite(ee, aoi, start: str, end: str, max_cloud: float):

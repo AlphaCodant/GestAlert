@@ -213,10 +213,20 @@ def build_router(get_current_user, require_roles) -> APIRouter:
     async def config(_u: dict = Depends(get_current_user)):
         return {
             "gee_configured": gee.gee_configured(),
+            "gee_identity": gee.gee_identity(),
             "default_params": core.DEFAULT_PARAMS,
             "levels": {name: th for name, th in core.LEVELS},
             "statuses": core.STATUS_LABEL,
         }
+
+    @r.get("/gee-check")
+    async def gee_check(_u: dict = Depends(analyst)):
+        if not gee.gee_configured():
+            raise HTTPException(status_code=400, detail="Google Earth Engine n'est pas configuré sur le serveur")
+        try:
+            return await asyncio.to_thread(gee.check_connection)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Connexion à Google Earth Engine impossible : {e}")
 
     # ---- Zones ----
     @r.get("/zones")

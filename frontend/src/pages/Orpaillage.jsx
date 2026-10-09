@@ -161,6 +161,15 @@ export default function Orpaillage() {
     }
   }
 
+  async function checkGee() {
+    try {
+      const r = await api.get("/orpaillage/gee-check");
+      toast.success(`Google Earth Engine connecté : ${r.data.sentinel2_images_gagnoa_jan_fev_2026} images Sentinel-2 trouvées sur Gagnoa (janv.-févr. 2026)`);
+    } catch (e) {
+      toast.error(errMsg(e));
+    }
+  }
+
   async function createZone(e) {
     e.preventDefault();
     const body = { name: zoneForm.name, description: zoneForm.description };
@@ -298,7 +307,7 @@ export default function Orpaillage() {
           <div>
             <span className="font-semibold">Mode démonstration.</span> Google Earth Engine n'est pas configuré sur le serveur :
             les analyses produisent des zones <span className="font-semibold">fictives</span>, sans valeur opérationnelle.
-            Renseignez GEE_SERVICE_ACCOUNT et GEE_PRIVATE_KEY_FILE pour analyser les vraies images Sentinel-2.
+            Renseignez GEE_PRIVATE_KEY_FILE (ou GEE_SERVICE_ACCOUNT_JSON) dans backend/.env pour analyser les vraies images Sentinel-2.
           </div>
         </div>
       )}
@@ -392,6 +401,12 @@ export default function Orpaillage() {
             <Card className="p-5 border border-border shadow-none" data-testid="run-card">
               <div className="flex items-center gap-2 font-semibold"><Satellite className="w-4 h-4 text-primary" />Nouvelle analyse</div>
               <p className="text-xs text-muted-foreground mt-1">Compare une période de référence à une période récente.</p>
+              {config?.gee_identity && (
+                <div className="mt-2 flex items-center justify-between gap-2 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 text-xs text-emerald-900">
+                  <span className="truncate">GEE · projet {config.gee_identity.project}</span>
+                  <button type="button" className="font-semibold underline shrink-0" onClick={checkGee}>Tester</button>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2 mt-3">
                 <div><Label className="text-xs">Référence : début</Label><Input type="date" value={periods.ref_start} onChange={(e) => setPeriods({ ...periods, ref_start: e.target.value })} /></div>
                 <div><Label className="text-xs">Référence : fin</Label><Input type="date" value={periods.ref_end} onChange={(e) => setPeriods({ ...periods, ref_end: e.target.value })} /></div>

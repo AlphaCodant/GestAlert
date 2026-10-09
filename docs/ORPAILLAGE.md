@@ -46,19 +46,25 @@ Tous les seuils se règlent dans l'interface, au moment de lancer l'analyse.
 
 Sans configuration, le module fonctionne en **mode démonstration**. Les zones affichées sont alors **fictives**, et un bandeau orange le signale sur la page.
 
-Pour analyser les vraies images :
+Il faut une clé de **compte de service** Google au format JSON, et ce compte doit avoir accès à Earth Engine. Le projet Google Cloud doit être enregistré pour Earth Engine, et le compte doit avoir le rôle « Earth Engine Resource Viewer » ou « Service Usage Consumer ».
 
-1. Créez un projet Google Cloud et activez l'API Earth Engine. Enregistrez le projet pour Earth Engine : l'usage non commercial et public est gratuit.
-2. Créez un **compte de service**, téléchargez sa **clé JSON** et donnez au compte le rôle « Earth Engine Resource Viewer ».
-3. Dans `backend/.env` :
+**Sur un poste ou un serveur** : placez le fichier JSON **hors du dépôt**, par exemple `C:\cles\gee.json`, puis ajoutez dans `backend/.env` :
 
 ```env
-GEE_SERVICE_ACCOUNT=nom-du-compte@votre-projet.iam.gserviceaccount.com
-GEE_PRIVATE_KEY_FILE=/chemin/vers/cle-gee.json
-GEE_PROJECT=votre-projet
+GEE_PRIVATE_KEY_FILE=C:\cles\gee.json
 ```
 
-4. Installez la dépendance (`pip install -r backend/requirements.txt`, qui inclut `earthengine-api`), puis redémarrez le backend.
+**Sur un hébergeur sans fichier (Render, Emergent)** : créez la variable d'environnement `GEE_SERVICE_ACCOUNT_JSON` et collez-y le contenu complet du fichier JSON.
+
+`GEE_PROJECT` est facultatif : à défaut, le `project_id` de la clé est utilisé.
+
+**Vérification** : depuis le dossier `backend`, lancez la commande suivante. Le bouton « Tester » de la page Orpaillage fait la même vérification.
+
+```bash
+python scripts/verifier_gee.py C:\cles\gee.json
+```
+
+**Sécurité.** Ne versionnez jamais la clé : `.gitignore` exclut déjà `.env`, `*.key` et `credentials.json`. Une clé qui a circulé dans un message ou un e-mail doit être remplacée. Dans Google Cloud, allez dans IAM, puis Comptes de service, puis Clés : créez une nouvelle clé et supprimez l'ancienne.
 
 **Conseil.** Lancez les analyses sur des zones de quelques centaines de km², comme Seriyo, plutôt que sur toute la région. Elles sont plus rapides et restent sous les quotas de Google Earth Engine.
 
@@ -89,7 +95,8 @@ Toutes les routes commencent par `/api/orpaillage` et demandent une connexion. C
 
 | Méthode | Route | Rôle |
 | --- | --- | --- |
-| GET | `/config` | Mode (GEE ou démonstration), seuils par défaut |
+| GET | `/config` | Mode (GEE ou démonstration), compte GEE utilisé, seuils par défaut |
+| GET | `/gee-check` | Teste la connexion à Earth Engine |
 | GET, POST, DELETE | `/zones` | Zones de surveillance |
 | POST | `/runs` | Lancer une analyse (traitée en arrière-plan) |
 | GET | `/runs`, `/runs/{id}` | Suivi des analyses |
