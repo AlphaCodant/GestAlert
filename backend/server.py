@@ -109,7 +109,7 @@ class UserLogin(BaseModel):
 
 class AlertCreate(BaseModel):
     forest_id: str
-    alert_type: Literal["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement"]
+    alert_type: Literal["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement", "orpaillage"]
     severity: Literal["faible", "moyenne", "haute", "critique"]
     lat: float
     lng: float
@@ -126,7 +126,7 @@ class AlertStatusUpdate(BaseModel):
 class ObservationCreate(BaseModel):
     forest_id: str
     alert_id: Optional[str] = None
-    observation_type: Literal["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement", "autre"]
+    observation_type: Literal["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement", "orpaillage", "autre"]
     lat: float
     lng: float
     description: str
@@ -941,14 +941,24 @@ async def seed_data():
         logger.info("✅ Seed PostgreSQL OK")
 
 
+# -------------------- Orpaillage (détection satellitaire) --------------------
+from orpaillage_api import build_router as build_orpaillage_router, seed_zones  # noqa: E402
+
+api.include_router(build_orpaillage_router(get_current_user, require_roles))
+
+
 # -------------------- App Wiring --------------------
 app.include_router(api)
 
+# CORS_ORIGINS : adresses autorisées du frontend, séparées par des virgules
+# (ex. https://gestpro.onrender.com). Obligatoire quand le frontend est sur un autre
+# domaine que l'API : le navigateur refuse « * » pour les requêtes avec identifiants.
+_cors_origins = [o.strip().rstrip("/") for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],
-    allow_origin_regex=".*",
+    allow_origins=_cors_origins or ["*"],
+    allow_origin_regex=None if _cors_origins else ".*",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -959,6 +969,7 @@ async def on_startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await seed_data()
+    await seed_zones()
 
 
 @app.on_event("shutdown")

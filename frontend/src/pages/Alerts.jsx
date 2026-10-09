@@ -19,7 +19,7 @@ import { Plus, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import ForestMap from "@/components/ForestMap";
 
-const TYPES = ["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement"];
+const TYPES = ["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement", "orpaillage"];
 const SEVERITIES = ["faible", "moyenne", "haute", "critique"];
 const STATUSES = ["detectee", "en_verification", "confirmee", "resolue", "rejetee"];
 

@@ -1,0 +1,55 @@
+# Déploiement GestPro sur Render (Blueprint).
+# Render > New > Blueprint > choisir ce dépôt. Les valeurs « sync: false » sont demandées
+# à la création : voir docs/DEPLOIEMENT_RENDER.md.
+services:
+  # ---------- API FastAPI ----------
+  - type: web
+    name: gestpro-api
+    runtime: python
+    rootDir: backend
+    plan: free               # gratuit : mise en veille après 15 min d'inactivité ; passer à une offre payante dans le tableau de bord pour un usage réel
+    region: oregon           # même région que la base PostgreSQL existante (Oregon)
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL          # URL de ta base PostgreSQL Render
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@gestpro.ci
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: CORS_ORIGINS          # adresse du frontend, ex. https://gestpro.onrender.com
+        sync: false
+      - key: GEE_SERVICE_ACCOUNT_JSON   # contenu complet de la clé JSON du compte de service
+        sync: false
+      - key: GEE_PROJECT
+        value: forestmonitoring-500922
+      - key: KOBO_WEBHOOK_SECRET
+        sync: false
+      - key: PUBLIC_BASE_URL       # adresse de l'API, ex. https://gestpro-api.onrender.com
+        sync: false
+
+  # ---------- Interface React ----------
+  - type: web
+    name: gestpro
+    runtime: static
+    buildCommand: cd frontend && npm install --legacy-peer-deps && npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: REACT_APP_BACKEND_URL  # adresse de l'API, ex. https://gestpro-api.onrender.com
+        sync: false
+      - key: CI
+        value: "false"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

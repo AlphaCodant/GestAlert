@@ -16,6 +16,7 @@ import AIAnalysis from "@/pages/AIAnalysis";
 import Kobo from "@/pages/Kobo";
 import Forests from "@/pages/Forests";
 import Users from "@/pages/Users";
+import Orpaillage from "@/pages/Orpaillage";
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
+              <Route path="orpaillage" element={<Orpaillage />} />
               <Route path="alerts" element={<Alerts />} />
               <Route path="observations" element={<Observations />} />
               <Route path="drones" element={<DroneMissions />} />

@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { ALERT_TYPE_LABEL, fmtDateTime } from "@/lib/constants";
 import ForestMap from "@/components/ForestMap";
 
-const TYPES = ["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement", "autre"];
+const TYPES = ["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement", "orpaillage", "autre"];
 
 export default function Observations() {
   const [observations, setObservations] = useState([]);

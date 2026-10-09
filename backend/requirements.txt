@@ -28,3 +28,4 @@ emergentintegrations==0.1.0
 alembic==1.18.4
 asyncpg==0.31.0
 SQLAlchemy==2.0.49
+earthengine-api>=1.4.0

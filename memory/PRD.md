@@ -70,6 +70,12 @@ Application de surveillance intelligente des Forêts Classées du Centre de Gest
   - Tableau des soumissions (type, agent, position, description, statut traité, date)
   - Visualiseur de payload brut JSON
 
+### Module Orpaillage (itération 5)
+- Page `/dashboard/orpaillage` : zones de surveillance (Région du Gôh, zones personnalisées comme Seriyo), analyses Sentinel-2 via GEE réel (mode démonstration fictif si GEE non configuré)
+- Zones suspectes notées (perte NDVI, sol nu, turbidité, proximité cours d'eau, surface), workflow présumé → précisé (drone) → confirmé/infirmé (terrain)
+- Import des sites d'orpaillage connus (CSV/GeoJSON), création d'alertes `orpaillage` et de missions drone, exports GPX/KML/GeoJSON/CSV
+- Tables : `surveillance_zones`, `detection_runs`, `mining_detections`, `known_mining_sites` — documentation : `docs/ORPAILLAGE.md`
+
 ## Backlog / Prochaines étapes
 ### P1 — Améliorations à court terme
 - Intégration GEE réelle (compte de service Google + clé JSON)
