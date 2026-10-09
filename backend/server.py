@@ -950,11 +950,15 @@ api.include_router(build_orpaillage_router(get_current_user, require_roles))
 # -------------------- App Wiring --------------------
 app.include_router(api)
 
+# CORS_ORIGINS : adresses autorisées du frontend, séparées par des virgules
+# (ex. https://gestpro.onrender.com). Obligatoire quand le frontend est sur un autre
+# domaine que l'API : le navigateur refuse « * » pour les requêtes avec identifiants.
+_cors_origins = [o.strip().rstrip("/") for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],
-    allow_origin_regex=".*",
+    allow_origins=_cors_origins or ["*"],
+    allow_origin_regex=None if _cors_origins else ".*",
     allow_methods=["*"],
     allow_headers=["*"],
 )

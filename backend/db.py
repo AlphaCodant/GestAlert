@@ -5,6 +5,14 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy.orm import DeclarativeBase
 
 DATABASE_URL = os.environ["DATABASE_URL"]
+# Render fournit « postgresql://… » : on force le pilote asyncpg et on retire « sslmode »,
+# que asyncpg ne comprend pas (le SSL est géré par DB_SSL ci-dessous).
+if DATABASE_URL.startswith(("postgres://", "postgresql://")):
+    DATABASE_URL = "postgresql+asyncpg://" + DATABASE_URL.split("://", 1)[1]
+if "sslmode=" in DATABASE_URL:
+    base, _, query = DATABASE_URL.partition("?")
+    kept = [q for q in query.split("&") if q and not q.startswith("sslmode=")]
+    DATABASE_URL = base + ("?" + "&".join(kept) if kept else "")
 
 # Render Postgres requires SSL. asyncpg accepts ssl=ctx via connect_args.
 # Set DB_SSL=false for a local PostgreSQL without SSL (development / tests).
