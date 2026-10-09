@@ -472,7 +472,7 @@ export default function Orpaillage() {
             </div>
             <div className="overflow-x-auto max-h-[420px]">
               <table className="w-full text-sm" data-testid="detections-table">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground sticky top-0">
+                <thead className="bg-muted text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-10">
                   <tr>
                     <th className="text-left px-3 py-2">Code</th>
                     <th className="text-left px-3 py-2">Score</th>
@@ -570,7 +570,7 @@ export default function Orpaillage() {
             </div>
             <div className="overflow-x-auto max-h-[360px]">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground sticky top-0">
+                <thead className="bg-muted text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-10">
                   <tr><th className="text-left px-3 py-2">Nom</th><th className="text-left px-3 py-2">Localité</th><th className="text-left px-3 py-2">Coordonnées</th><th className="text-left px-3 py-2">Statut</th></tr>
                 </thead>
                 <tbody>
