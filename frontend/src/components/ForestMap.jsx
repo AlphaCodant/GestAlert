@@ -24,6 +24,7 @@ const TYPE_ICON_COLOR = {
   feu_de_brousse: "#dc2626",
   exploitation_illegale: "#a16207",
   defrichement: "#9a3412",
+  orpaillage: "#b45309",
 };
 
 function FitBounds({ points }) {

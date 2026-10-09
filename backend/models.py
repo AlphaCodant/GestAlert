@@ -123,3 +123,76 @@ class KoboSubmission(Base):
     observation_id: Mapped[str | None] = mapped_column(String, nullable=True)
     processed: Mapped[bool] = mapped_column(Boolean, default=False)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+
+
+# -------------------- Orpaillage (détection satellitaire) --------------------
+class SurveillanceZone(Base):
+    """Zone de surveillance (Région du Gôh, zone de Seriyo, ...) au format GeoJSON."""
+    __tablename__ = "surveillance_zones"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="")
+    geometry: Mapped[dict] = mapped_column(JSONB, nullable=False)  # GeoJSON Polygon / MultiPolygon
+    min_lat: Mapped[float] = mapped_column(Float, nullable=False)
+    min_lng: Mapped[float] = mapped_column(Float, nullable=False)
+    max_lat: Mapped[float] = mapped_column(Float, nullable=False)
+    max_lng: Mapped[float] = mapped_column(Float, nullable=False)
+    approximate: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    created_by: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
+class DetectionRun(Base):
+    """Une analyse satellitaire (comparaison de deux périodes Sentinel-2) sur une zone."""
+    __tablename__ = "detection_runs"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    zone_id: Mapped[str] = mapped_column(String, ForeignKey("surveillance_zones.id", ondelete="CASCADE"), nullable=False, index=True)
+    mode: Mapped[str] = mapped_column(String(32), nullable=False)  # gee | simulation
+    status: Mapped[str] = mapped_column(String(32), default="en_cours")  # en_cours | terminee | echec
+    ref_start: Mapped[str] = mapped_column(String(10), nullable=False)
+    ref_end: Mapped[str] = mapped_column(String(10), nullable=False)
+    recent_start: Mapped[str] = mapped_column(String(10), nullable=False)
+    recent_end: Mapped[str] = mapped_column(String(10), nullable=False)
+    params: Mapped[dict] = mapped_column(JSONB, default=dict)
+    detections_count: Mapped[int] = mapped_column(Integer, default=0)
+    images_used: Mapped[dict] = mapped_column(JSONB, default=dict)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
+class MiningDetection(Base):
+    """Zone susceptible d'être un site d'orpaillage illégal, issue d'une analyse."""
+    __tablename__ = "mining_detections"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    code: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    run_id: Mapped[str] = mapped_column(String, ForeignKey("detection_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    zone_id: Mapped[str] = mapped_column(String, ForeignKey("surveillance_zones.id", ondelete="CASCADE"), nullable=False, index=True)
+    geometry: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    lat: Mapped[float] = mapped_column(Float, nullable=False)
+    lng: Mapped[float] = mapped_column(Float, nullable=False)
+    area_ha: Mapped[float] = mapped_column(Float, nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False, index=True)
+    level: Mapped[str] = mapped_column(String(16), nullable=False)  # forte | moyenne | faible
+    indices: Mapped[dict] = mapped_column(JSONB, default=dict)  # dndvi, bsi, mndwi, ndti, dist_water_m
+    known_site_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    known_site_distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="presume", index=True)  # presume | precise | confirme | infirme
+    history: Mapped[list] = mapped_column(JSONB, default=list)
+    alert_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    mission_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+
+
+class KnownMiningSite(Base):
+    """Site d'orpaillage déjà connu et géoréférencé (import CSV / GeoJSON)."""
+    __tablename__ = "known_mining_sites"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    lat: Mapped[float] = mapped_column(Float, nullable=False)
+    lng: Mapped[float] = mapped_column(Float, nullable=False)
+    locality: Mapped[str] = mapped_column(String(255), default="")
+    status: Mapped[str] = mapped_column(String(32), default="actif")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

@@ -4,13 +4,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_LABEL } from "@/lib/constants";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import {
-  LayoutDashboard, MapPin, Bell, Eye, Plane, Sparkles, Trees, Brain, Users, LogOut, Trees as Logo, ClipboardList
+  LayoutDashboard, MapPin, Bell, Eye, Plane, Sparkles, Trees, Brain, Users, LogOut, Trees as Logo, ClipboardList, Pickaxe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 
 const NAV = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, roles: null },
+  { to: "/dashboard/orpaillage", label: "Orpaillage (satellite)", icon: Pickaxe, roles: null },
   { to: "/dashboard/alerts", label: "Alertes", icon: Bell, roles: null },
   { to: "/dashboard/observations", label: "Observations", icon: Eye, roles: null },
   { to: "/dashboard/drones", label: "Missions drone", icon: Plane, roles: null },

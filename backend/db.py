@@ -7,9 +7,13 @@ from sqlalchemy.orm import DeclarativeBase
 DATABASE_URL = os.environ["DATABASE_URL"]
 
 # Render Postgres requires SSL. asyncpg accepts ssl=ctx via connect_args.
-_ssl_ctx = ssl.create_default_context()
-_ssl_ctx.check_hostname = False
-_ssl_ctx.verify_mode = ssl.CERT_NONE
+# Set DB_SSL=false for a local PostgreSQL without SSL (development / tests).
+_connect_args = {}
+if os.environ.get("DB_SSL", "true").lower() not in ("0", "false", "no", "off"):
+    _ssl_ctx = ssl.create_default_context()
+    _ssl_ctx.check_hostname = False
+    _ssl_ctx.verify_mode = ssl.CERT_NONE
+    _connect_args = {"ssl": _ssl_ctx}
 
 engine = create_async_engine(
     DATABASE_URL,
@@ -17,7 +21,7 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=5,
-    connect_args={"ssl": _ssl_ctx},
+    connect_args=_connect_args,
 )
 
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

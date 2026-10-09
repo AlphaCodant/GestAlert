@@ -11,6 +11,7 @@ export const ALERT_TYPE_LABEL = {
   feu_de_brousse: "Feu de brousse",
   exploitation_illegale: "Exploitation illégale",
   defrichement: "Défrichement",
+  orpaillage: "Orpaillage illégal",
   autre: "Autre",
 };
 
@@ -75,3 +76,27 @@ export function fmtDateTime(iso) {
     });
   } catch { return iso; }
 }
+
+export const DETECTION_STATUS_LABEL = {
+  presume: "Présumé (satellite)",
+  precise: "Précisé (drone)",
+  confirme: "Confirmé (terrain)",
+  infirme: "Infirmé (terrain)",
+};
+
+export const DETECTION_STATUS_COLOR = {
+  presume: "bg-blue-100 text-blue-800 border-blue-300",
+  precise: "bg-violet-100 text-violet-800 border-violet-300",
+  confirme: "bg-red-100 text-red-800 border-red-300",
+  infirme: "bg-zinc-100 text-zinc-700 border-zinc-300",
+};
+
+export const DETECTION_LEVEL_LABEL = { forte: "forte", moyenne: "moyenne", faible: "faible" };
+
+export const DETECTION_LEVEL_HEX = { forte: "#dc2626", moyenne: "#f59e0b", faible: "#84cc16" };
+
+export const DETECTION_LEVEL_COLOR = {
+  forte: "bg-red-100 text-red-800 border-red-300",
+  moyenne: "bg-amber-100 text-amber-800 border-amber-300",
+  faible: "bg-lime-100 text-lime-800 border-lime-300",
+};

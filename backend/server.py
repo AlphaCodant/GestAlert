@@ -109,7 +109,7 @@ class UserLogin(BaseModel):
 
 class AlertCreate(BaseModel):
     forest_id: str
-    alert_type: Literal["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement"]
+    alert_type: Literal["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement", "orpaillage"]
     severity: Literal["faible", "moyenne", "haute", "critique"]
     lat: float
     lng: float
@@ -126,7 +126,7 @@ class AlertStatusUpdate(BaseModel):
 class ObservationCreate(BaseModel):
     forest_id: str
     alert_id: Optional[str] = None
-    observation_type: Literal["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement", "autre"]
+    observation_type: Literal["deforestation", "agriculture_illegale", "feu_de_brousse", "exploitation_illegale", "defrichement", "orpaillage", "autre"]
     lat: float
     lng: float
     description: str
@@ -941,6 +941,12 @@ async def seed_data():
         logger.info("✅ Seed PostgreSQL OK")
 
 
+# -------------------- Orpaillage (détection satellitaire) --------------------
+from orpaillage_api import build_router as build_orpaillage_router, seed_zones  # noqa: E402
+
+api.include_router(build_orpaillage_router(get_current_user, require_roles))
+
+
 # -------------------- App Wiring --------------------
 app.include_router(api)
 
@@ -959,6 +965,7 @@ async def on_startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await seed_data()
+    await seed_zones()
 
 
 @app.on_event("shutdown")
